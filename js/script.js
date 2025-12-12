@@ -21,6 +21,7 @@ let revealImpostorsState = 0;
 
 // =========================================================
 // Web Audio SFX (mobile-precise click + flip, no overlap)
+// iOS-safe: hard unlock + auto-resume + safe event options
 // =========================================================
 
 const SFX_CLICK_URL = "assets/audio/mouse-click.mp3";
@@ -35,11 +36,40 @@ let lastFlipSource = null;
 
 let audioInitPromise = null;
 
-// Prefetch the audio files early (no autoplay issues; just network)
+// --- Safe addEventListener options (older iOS fallback) ---
+let supportsListenerOptions = false;
+(() => {
+    try {
+        const dummy = () => { };
+        const opts = Object.defineProperty({}, "passive", {
+            get() { supportsListenerOptions = true; }
+        });
+        window.addEventListener("testPassive", dummy, opts);
+        window.removeEventListener("testPassive", dummy, opts);
+    } catch (_) {
+        supportsListenerOptions = false;
+    }
+})();
+
+function on(el, type, handler, options) {
+    if (!supportsListenerOptions) {
+        const capture = !!(options && options.capture);
+        el.addEventListener(type, handler, capture);
+        return;
+    }
+    el.addEventListener(type, handler, options || false);
+}
+
+const PRESS_EVENT = window.PointerEvent ? "pointerdown" : "touchstart";
+
+// Prefetch network early (no autoplay issues; just download)
 const sfxPrefetchPromise = Promise.all([
     fetch(SFX_CLICK_URL).then(r => r.arrayBuffer()),
     fetch(SFX_FLIP_URL).then(r => r.arrayBuffer())
-]);
+]).catch((err) => {
+    console.warn("SFX prefetch failed:", err);
+    return [null, null];
+});
 
 function ensureAudioContext() {
     if (audioCtx) return audioCtx;
@@ -49,6 +79,18 @@ function ensureAudioContext() {
     return audioCtx;
 }
 
+// iOS hard unlock: play a silent buffer once to fully unlock audio pipeline
+function hardUnlockWebAudio(ctx) {
+    if (!ctx) return;
+    try {
+        const buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        src.connect(ctx.destination);
+        src.start(0);
+    } catch (_) { }
+}
+
 async function initAudio() {
     if (audioInitPromise) return audioInitPromise;
 
@@ -56,15 +98,27 @@ async function initAudio() {
         const ctx = ensureAudioContext();
         if (!ctx) return;
 
-        // On mobiles the context often starts suspended until a gesture happens
+        // Resume if suspended (mobile)
         if (ctx.state === "suspended") {
             try { await ctx.resume(); } catch (_) { }
         }
 
-        // decodeAudioData may detach the ArrayBuffer, so we slice()
+        // Hard unlock early (important for iOS mute cases)
+        hardUnlockWebAudio(ctx);
+
         const [clickArr, flipArr] = await sfxPrefetchPromise;
-        clickBuffer = await ctx.decodeAudioData(clickArr.slice(0));
-        flipBuffer = await ctx.decodeAudioData(flipArr.slice(0));
+        if (!clickArr || !flipArr) return;
+
+        // decodeAudioData may detach ArrayBuffer -> slice()
+        try {
+            clickBuffer = await ctx.decodeAudioData(clickArr.slice(0));
+            flipBuffer = await ctx.decodeAudioData(flipArr.slice(0));
+        } catch (err) {
+            console.warn("decodeAudioData failed:", err);
+        }
+
+        // Extra hard unlock after decode (safe)
+        hardUnlockWebAudio(ctx);
     })();
 
     return audioInitPromise;
@@ -75,11 +129,11 @@ function stopSource(src) {
     try { src.stop(0); } catch (_) { }
 }
 
-function playBuffer(buffer, kind) {
+function createAndStart(buffer, kind) {
     const ctx = audioCtx;
     if (!ctx || !buffer) return;
 
-    // "Last click wins": stop previous of same kind
+    // "Last wins" per kind
     if (kind === "click") stopSource(lastClickSource);
     if (kind === "flip") stopSource(lastFlipSource);
 
@@ -92,9 +146,27 @@ function playBuffer(buffer, kind) {
     if (kind === "flip") lastFlipSource = src;
 }
 
+function playBuffer(buffer, kind) {
+    const ctx = audioCtx;
+    if (!ctx || !buffer) return;
+
+    // If mobile suspended (returning from background), resume then play
+    if (ctx.state === "suspended") {
+        ctx.resume().then(() => {
+            hardUnlockWebAudio(ctx);
+            createAndStart(buffer, kind);
+        }).catch(() => { });
+        return;
+    }
+
+    createAndStart(buffer, kind);
+}
+
 function playClick() {
     if (!audioCtx || !clickBuffer) {
-        initAudio().then(() => { if (clickBuffer) playBuffer(clickBuffer, "click"); }).catch(() => { });
+        initAudio()
+            .then(() => { if (clickBuffer) playBuffer(clickBuffer, "click"); })
+            .catch(() => { });
         return;
     }
     playBuffer(clickBuffer, "click");
@@ -102,30 +174,45 @@ function playClick() {
 
 function playFlip() {
     if (!audioCtx || !flipBuffer) {
-        initAudio().then(() => { if (flipBuffer) playBuffer(flipBuffer, "flip"); }).catch(() => { });
+        initAudio()
+            .then(() => { if (flipBuffer) playBuffer(flipBuffer, "flip"); })
+            .catch(() => { });
         return;
     }
     playBuffer(flipBuffer, "flip");
 }
 
 function isInteractiveForClickSound(target) {
-    const btn = target.closest && target.closest("button");
+    // Buttons (enabled) or evidence cards
+    const btn = target && target.closest ? target.closest("button") : null;
     if (btn) return !btn.disabled;
-    return target.classList && target.classList.contains("evidence-card");
+    return !!(target && target.classList && target.classList.contains("evidence-card"));
 }
 
-// Prime audio as early as possible on first user gesture
+// Prime audio on first real user gesture (must be user-initiated on iOS)
 function primeAudioOnFirstGesture() {
     initAudio().catch(() => { });
 }
-document.addEventListener("pointerdown", primeAudioOnFirstGesture, { once: true, capture: true });
-document.addEventListener("touchstart", primeAudioOnFirstGesture, { once: true, passive: true, capture: true });
 
-// Fast + faithful: trigger click SFX on pointerdown (not click)
-document.addEventListener("pointerdown", (e) => {
+// One-time prime
+on(document, PRESS_EVENT, primeAudioOnFirstGesture, { once: true, capture: true, passive: true });
+
+// Auto-resume on any press (iOS can suspend when backgrounded)
+on(document, PRESS_EVENT, () => {
+    if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume().then(() => hardUnlockWebAudio(audioCtx)).catch(() => { });
+    }
+}, { capture: true, passive: true });
+
+// Fast + faithful click SFX on press (not click)
+on(document, PRESS_EVENT, (e) => {
     if (!isInteractiveForClickSound(e.target)) return;
     playClick();
-}, { capture: true });
+}, { capture: true, passive: true });
+
+// =========================================================
+// Game logic
+// =========================================================
 
 async function loadGameData() {
     const fileMapping = {
@@ -141,7 +228,6 @@ async function loadGameData() {
 
     const loadedCats = {};
 
-    // Default fallback (minimal) if fetch fails
     loadedCats["Animales"] = ["Perro", "Gato"];
 
     try {
@@ -159,7 +245,6 @@ async function loadGameData() {
             }
         }
         state.categories = loadedCats;
-        // Default selection if empty
         if (state.activeCategories.size === 0) {
             state.activeCategories = new Set(Object.keys(loadedCats));
         }
@@ -181,7 +266,6 @@ function loadData() {
             console.warn("Error al cargar datos, valores por defecto.");
         }
     }
-    // Load JSONs
     loadGameData();
 }
 
@@ -219,19 +303,16 @@ function updateNumPlayers(delta) {
         document.getElementById("numPlayersDisplay").textContent = state.numPlayers;
         renderSuspectInputs();
 
-        // Update button states
         document.getElementById("btnPlayersDown").disabled = state.numPlayers <= 3;
         document.getElementById("btnPlayersUp").disabled = state.numPlayers >= 20;
 
-        // Adjust impostors if needed
         const maxImpostors = Math.floor((state.numPlayers - 1) / 2);
         if (state.numImpostors > maxImpostors) {
             state.numImpostors = maxImpostors;
-            if (state.numImpostors < 1) state.numImpostors = 1; // Should not happen with min 3 players
+            if (state.numImpostors < 1) state.numImpostors = 1;
             document.getElementById("numImpostorsDisplay").textContent = state.numImpostors;
         }
 
-        // Re-evaluate impostor button states based on new player count
         const currentMaxImpostors = Math.floor((state.numPlayers - 1) / 2);
         document.getElementById("btnImpostorsDown").disabled = state.numImpostors <= 1;
         document.getElementById("btnImpostorsUp").disabled = state.numImpostors >= currentMaxImpostors;
@@ -245,7 +326,6 @@ function updateNumImpostors(delta) {
         state.numImpostors = newValue;
         document.getElementById("numImpostorsDisplay").textContent = state.numImpostors;
 
-        // Update button states
         document.getElementById("btnImpostorsDown").disabled = state.numImpostors <= 1;
         document.getElementById("btnImpostorsUp").disabled = state.numImpostors >= maxImpostors;
     }
@@ -367,7 +447,6 @@ function prepareRound() {
         return false;
     }
 
-    // Two-step selection: 1. Category, 2. Item
     const activeCats = Array.from(state.activeCategories);
     const validCats = activeCats.filter(c => state.categories[c] && state.categories[c].length > 0);
 
@@ -377,11 +456,9 @@ function prepareRound() {
         return false;
     }
 
-    // 1. Random Category
     const selectedCat = randomFromArray(validCats);
     const words = state.categories[selectedCat];
 
-    // 2. Random Word
     state.currentWord = randomFromArray(words);
 
     const numPlayers = state.players.length;
@@ -484,7 +561,6 @@ function fillCardForCurrentPlayer() {
     }
 }
 
-// Hold behaviour
 function onHoldStart() {
     if (holdTimeout) clearTimeout(holdTimeout);
 
