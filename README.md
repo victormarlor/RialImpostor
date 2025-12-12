@@ -2,7 +2,7 @@
 
 ¡Bienvenido a **Rial Impostor**! Un juego de deducción social con un toque de misterio y estética *Film Noir*, diseñado para jugar en grupo pasando el móvil.
 
-![Pantalla de Inicio](screenshots/home.jpg)
+<img src="screenshots/home.jpg" width="300" alt="Pantalla de Inicio">
 
 ## 🕵️ ¿De qué va el juego?
 
@@ -22,7 +22,7 @@ Similar a juegos como *"Spyfall"* o *"El Impostor"*, en cada ronda todos los jug
 ### 1. Configuración del Caso
 Al pulsar "Jugar", accederás al panel de configuración. Aquí el "Jefe de Policía" (cualquiera de vosotros) configura la partida:
 
-![Pantalla de Configuración](screenshots/config.jpg)
+<img src="screenshots/config.jpg" width="300" alt="Pantalla de Configuración">
 
 *   **Sospechosos**: Número total de jugadores (3-20).
 *   **Impostores**: Cuántos enemigos infiltrados habrá.
@@ -33,21 +33,21 @@ Al pulsar "Jugar", accederás al panel de configuración. Aquí el "Jefe de Poli
 ### 2. Clasificado: Top Secret
 El juego te dará una carta de "Caso Clasificado". Pásale el móvil al jugador cuyo nombre aparece en pantalla.
 
-![Carpeta Cerrada](screenshots/reveal_closed.jpg)
+<img src="screenshots/reveal_closed.jpg" width="200" alt="Carpeta Cerrada">
 
 El jugador debe **mantener pulsada** la carta para ver su identidad en secreto.
 
 *   Si eres **Agente**, verás la palabra clave (ej. "Detectives").
 *   Si eres **Impostor**, verás un mensaje en rojo diciendo "Impostor".
 
-![Carpeta Abierta](screenshots/reveal_open.jpg)
+<img src="screenshots/reveal_open.jpg" width="200" alt="Carpeta Abierta">
 
 Al soltar, la carpeta se cierra. Pulsa "Siguiente Sospechoso" y pasa el móvil al siguiente jugador.
 
 ### 3. La Investigación
 Cuando todos saben su rol, aparece el **Tablero de Investigación**.
 
-![Tablero de Investigación](screenshots/board.jpg)
+<img src="screenshots/board.jpg" width="300" alt="Tablero de Investigación">
 
 *   **Palabra Clave**: Aparece como `[CLASIFICADO]` para evitar miradas indiscretas.
 *   **Empieza**: El juego elige al azar quién debe lanzar la primera pregunta o afirmación.
@@ -58,7 +58,7 @@ Hablad por turnos. Decid una palabra relacionada con la clave, pero no tan obvia
 ### 4. El Veredicto
 Cuando creáis saber quién es el impostor, tras un tiempo límite que acordéis o tras terminar la ronda, pulsad el botón **"Revelar Impostor(es)"**. Esto también revela la palabra clave.
 
-![Resultado](screenshots/result.jpg)
+<img src="screenshots/result.jpg" width="300" alt="Resultado">
 
 El juego desclasificará el archivo mostrando la palabra real y los nombres de los culpables.
 
@@ -83,13 +83,13 @@ Este proyecto es una aplicación web estática (Vanilla JS/HTML/CSS), por lo que
 **Tutorial de Instalación en iOS:**
 
 1.  **Paso 1:** Pulsa el botón de compartir del navegador.
-    ![Paso 1](screenshots/IntalacionPaso1.jpg)
+    <br><img src="screenshots/IntalacionPaso1.jpg" width="250" alt="Paso 1">
 
-2.  **Paso 2:** Busca y pulsa la opción "+ Añadir a inicio".
-    ![Paso 2](screenshots/InsralacionPaso2.jpg)
+2.  **Paso 2:** Busca y pulsa la opción "..." más.
+    <br><img src="screenshots/InsralacionPaso2.jpg" width="250" alt="Paso 2">
 
-3.  **Paso 3:** Pulsa "Añadir" para confirmar.
-    ![Paso 3](screenshots/InstalacionPaso3.jpg)
+3.  **Paso 3:** Pulsa "Añadir" para añadir a la pantalla de inicio.
+    <br><img src="screenshots/InstalacionPaso3.jpg" width="250" alt="Paso 3">
 
 ¡Ahora tendrás el icono de la app en tu escritorio y funcionará a pantalla completa!
 
