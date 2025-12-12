@@ -112,6 +112,7 @@ h2 {
     background: var(--noir-white);
     color: var(--noir-black);
     padding: 16px;
+    padding-bottom: 32px;
     box-shadow: var(--shadow-heavy);
     position: relative;
     display: flex;
@@ -620,7 +621,7 @@ button:disabled {
 }
 
 .board-value.classified {
-    color: var(--noir-gray-light);
+    color: var(--noir-black);
     font-style: italic;
 }
 
@@ -858,7 +859,7 @@ button.large {
     /* Use cover instead of fixed % to be safer */
     background-position: center;
     background-repeat: no-repeat;
-    background-size: 235%;
+    background-size: 250%;
     /* o 160%, 180%... */
     position: relative;
 }

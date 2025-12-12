@@ -19,72 +19,113 @@ let cardCurrentlyFlipped = false;
 let revealUnlocked = false;
 let revealImpostorsState = 0;
 
-// Audio
-const audioClick = new Audio("assets/audio/mouse-click.mp3");
-const audioFlip = new Audio("assets/audio/flipcard.mp3");
+// =========================================================
+// Web Audio SFX (mobile-precise click + flip, no overlap)
+// =========================================================
 
-// Force preload
-[audioClick, audioFlip].forEach(audio => {
-    audio.preload = "auto";
-    // We do NOT call .load() here to avoid auto-play policy errors on some browsers
-    // We wait for the unlock interaction
-});
+const SFX_CLICK_URL = "assets/audio/mouse-click.mp3";
+const SFX_FLIP_URL = "assets/audio/flipcard.mp3";
 
-let audioUnlocked = false;
+let audioCtx = null;
+let clickBuffer = null;
+let flipBuffer = null;
 
-function unlockAudio() {
-    if (audioUnlocked) return;
+let lastClickSource = null;
+let lastFlipSource = null;
 
-    // Attempt to unlock by playing and immediately pausing
-    [audioClick, audioFlip].forEach(audio => {
-        audio.play().then(() => {
-            audio.pause();
-            audio.currentTime = 0;
-        }).catch(() => {
-            // Ignore error during unlock
-        });
-    });
+let audioInitPromise = null;
 
-    audioUnlocked = true;
+// Prefetch the audio files early (no autoplay issues; just network)
+const sfxPrefetchPromise = Promise.all([
+    fetch(SFX_CLICK_URL).then(r => r.arrayBuffer()),
+    fetch(SFX_FLIP_URL).then(r => r.arrayBuffer())
+]);
 
-    // Remove listeners once unlocked
-    document.removeEventListener("touchstart", unlockAudio);
-    document.removeEventListener("click", unlockAudio);
+function ensureAudioContext() {
+    if (audioCtx) return audioCtx;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    audioCtx = new Ctx();
+    return audioCtx;
 }
 
-document.addEventListener("touchstart", unlockAudio, { passive: true });
-document.addEventListener("click", unlockAudio, { passive: true });
+async function initAudio() {
+    if (audioInitPromise) return audioInitPromise;
 
-function playSound(audio) {
-    if (!audio) return;
+    audioInitPromise = (async () => {
+        const ctx = ensureAudioContext();
+        if (!ctx) return;
 
-    // Reset current time to 0 to restart immediately
-    try {
-        audio.currentTime = 0;
-    } catch (e) {
-        // Ignorable if not loaded yet
-    }
+        // On mobiles the context often starts suspended until a gesture happens
+        if (ctx.state === "suspended") {
+            try { await ctx.resume(); } catch (_) { }
+        }
 
-    // Attempt to play and handle the promise safely
-    const playPromise = audio.play();
+        // decodeAudioData may detach the ArrayBuffer, so we slice()
+        const [clickArr, flipArr] = await sfxPrefetchPromise;
+        clickBuffer = await ctx.decodeAudioData(clickArr.slice(0));
+        flipBuffer = await ctx.decodeAudioData(flipArr.slice(0));
+    })();
 
-    if (playPromise !== undefined) {
-        playPromise.catch(error => {
-            // Auto-play was prevented or interrupted.
-            if (error.name !== "AbortError") {
-                console.warn("Audio play issue:", error);
-            }
-        });
-    }
+    return audioInitPromise;
 }
 
-// Global click listener for sounds
-document.addEventListener("click", (e) => {
-    // Play on any button or element with .btn class, or specific interactive elements
-    if (e.target.tagName === "BUTTON" || e.target.closest("button") || e.target.classList.contains("evidence-card")) {
-        playSound(audioClick);
+function stopSource(src) {
+    if (!src) return;
+    try { src.stop(0); } catch (_) { }
+}
+
+function playBuffer(buffer, kind) {
+    const ctx = audioCtx;
+    if (!ctx || !buffer) return;
+
+    // "Last click wins": stop previous of same kind
+    if (kind === "click") stopSource(lastClickSource);
+    if (kind === "flip") stopSource(lastFlipSource);
+
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    src.connect(ctx.destination);
+    src.start(0);
+
+    if (kind === "click") lastClickSource = src;
+    if (kind === "flip") lastFlipSource = src;
+}
+
+function playClick() {
+    if (!audioCtx || !clickBuffer) {
+        initAudio().then(() => { if (clickBuffer) playBuffer(clickBuffer, "click"); }).catch(() => { });
+        return;
     }
-}, { passive: true });
+    playBuffer(clickBuffer, "click");
+}
+
+function playFlip() {
+    if (!audioCtx || !flipBuffer) {
+        initAudio().then(() => { if (flipBuffer) playBuffer(flipBuffer, "flip"); }).catch(() => { });
+        return;
+    }
+    playBuffer(flipBuffer, "flip");
+}
+
+function isInteractiveForClickSound(target) {
+    const btn = target.closest && target.closest("button");
+    if (btn) return !btn.disabled;
+    return target.classList && target.classList.contains("evidence-card");
+}
+
+// Prime audio as early as possible on first user gesture
+function primeAudioOnFirstGesture() {
+    initAudio().catch(() => { });
+}
+document.addEventListener("pointerdown", primeAudioOnFirstGesture, { once: true, capture: true });
+document.addEventListener("touchstart", primeAudioOnFirstGesture, { once: true, passive: true, capture: true });
+
+// Fast + faithful: trigger click SFX on pointerdown (not click)
+document.addEventListener("pointerdown", (e) => {
+    if (!isInteractiveForClickSound(e.target)) return;
+    playClick();
+}, { capture: true });
 
 async function loadGameData() {
     const fileMapping = {
@@ -344,7 +385,6 @@ function prepareRound() {
     state.currentWord = randomFromArray(words);
 
     const numPlayers = state.players.length;
-    // state.currentWord is already set above
     const indexes = Array.from({ length: numPlayers }, (_, i) => i);
     shuffleArray(indexes);
     state.currentImpostorsIndexes = indexes.slice(0, state.numImpostors);
@@ -443,17 +483,18 @@ function fillCardForCurrentPlayer() {
         main.classList.remove("impostor-text");
     }
 }
-// [Intervening code omitted for brevity]
+
+// Hold behaviour
 function onHoldStart() {
-    if (holdTimeout) {
-        clearTimeout(holdTimeout);
-    }
+    if (holdTimeout) clearTimeout(holdTimeout);
+
     holdTimeout = setTimeout(() => {
-        playSound(audioFlip); // Sound on open
+        playFlip(); // Sound on open (WebAudio)
         const roleCard = document.getElementById("roleCard");
         fillCardForCurrentPlayer();
         roleCard.classList.add("flipped");
         cardCurrentlyFlipped = true;
+
         if (!revealUnlocked) {
             const btn = document.getElementById("btnNextPlayer");
             btn.classList.remove("is-hidden");
@@ -469,7 +510,7 @@ function onHoldEnd() {
         holdTimeout = null;
     }
     if (cardCurrentlyFlipped) {
-        playSound(audioFlip); // Sound on close
+        playFlip(); // Sound on close (WebAudio)
         const roleCard = document.getElementById("roleCard");
         roleCard.classList.remove("flipped");
         cardCurrentlyFlipped = false;
@@ -505,16 +546,12 @@ let deferredPrompt;
 let isPWAAvailable = false;
 
 window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent the mini-infobar from appearing on mobile
     e.preventDefault();
-    // Stash the event so it can be triggered later
     deferredPrompt = e;
     isPWAAvailable = true;
-    // Keep the install button visible (it's already visible by default)
 });
 
 window.addEventListener('appinstalled', () => {
-    // Hide the install button after successful installation
     const installBtn = document.getElementById('btnInstall');
     if (installBtn) {
         installBtn.style.display = 'none';
@@ -530,7 +567,6 @@ window.addEventListener("DOMContentLoaded", () => {
     renderEvidenceBoard();
     setImpostorsKnow(false);
 
-    // Home screen buttons
     const btnPlay = document.getElementById("btnPlay");
     if (btnPlay) {
         btnPlay.addEventListener("click", () => {
@@ -552,69 +588,42 @@ window.addEventListener("DOMContentLoaded", () => {
                 alert("Para instalar esta aplicación, ábrela desde Chrome, Edge o Safari y busca la opción 'Añadir a pantalla de inicio' en el menú del navegador.");
                 return;
             }
-            // Show the install prompt
             deferredPrompt.prompt();
-            // Wait for the user to respond to the prompt
             const { outcome } = await deferredPrompt.userChoice;
             console.log(`User response to the install prompt: ${outcome}`);
-            // Clear the deferredPrompt for next time
             deferredPrompt = null;
             isPWAAvailable = false;
-            // Hide the install button
             btnInstall.style.display = 'none';
         });
     }
 
-    // Number controls
     document.getElementById("btnPlayersDown").addEventListener("click", () => updateNumPlayers(-1));
     document.getElementById("btnPlayersUp").addEventListener("click", () => updateNumPlayers(1));
     document.getElementById("btnImpostorsDown").addEventListener("click", () => updateNumImpostors(-1));
     document.getElementById("btnImpostorsUp").addEventListener("click", () => updateNumImpostors(1));
 
-    // Initialize button states
     document.getElementById("btnPlayersDown").disabled = state.numPlayers <= 3;
     document.getElementById("btnPlayersUp").disabled = state.numPlayers >= 20;
     document.getElementById("btnImpostorsDown").disabled = state.numImpostors <= 1;
     const maxImpostors = Math.floor((state.numPlayers - 1) / 2);
     document.getElementById("btnImpostorsUp").disabled = state.numImpostors >= maxImpostors;
 
-    document.getElementById("btnImpostorsKnowYes").addEventListener("click", () => {
-        setImpostorsKnow(true);
-    });
-    document.getElementById("btnImpostorsKnowNo").addEventListener("click", () => {
-        setImpostorsKnow(false);
-    });
+    document.getElementById("btnImpostorsKnowYes").addEventListener("click", () => setImpostorsKnow(true));
+    document.getElementById("btnImpostorsKnowNo").addEventListener("click", () => setImpostorsKnow(false));
 
-    // Navegación
     document.getElementById("btnToCategories").addEventListener("click", () => {
-        if (validateConfig()) {
-            switchSection("categoriesSection");
-        }
+        if (validateConfig()) switchSection("categoriesSection");
     });
 
-    document.getElementById("btnCategoriesBack").addEventListener("click", () => {
-        switchSection("configSection");
-    });
-
-    document.getElementById("btnToNames").addEventListener("click", () => {
-        switchSection("namesSection");
-    });
-
-    document.getElementById("btnNamesBack").addEventListener("click", () => {
-        switchSection("categoriesSection");
-    });
-
-    document.getElementById("btnBackToConfig").addEventListener("click", () => {
-        switchSection("configSection");
-    });
+    document.getElementById("btnCategoriesBack").addEventListener("click", () => switchSection("configSection"));
+    document.getElementById("btnToNames").addEventListener("click", () => switchSection("namesSection"));
+    document.getElementById("btnNamesBack").addEventListener("click", () => switchSection("categoriesSection"));
+    document.getElementById("btnBackToConfig").addEventListener("click", () => switchSection("configSection"));
 
     document.getElementById("btnStartGame").addEventListener("click", () => {
-        if (prepareRound()) {
-            startRevealPhase();
-        }
+        if (prepareRound()) startRevealPhase();
     });
 
-    // Carta: mantener pulsado
     const roleCard = document.getElementById("roleCard");
     roleCard.addEventListener("mousedown", onHoldStart);
     roleCard.addEventListener("touchstart", (e) => {
@@ -622,9 +631,7 @@ window.addEventListener("DOMContentLoaded", () => {
         onHoldStart();
     }, { passive: false });
 
-    ["mouseup", "mouseleave"].forEach(ev => {
-        roleCard.addEventListener(ev, onHoldEnd);
-    });
+    ["mouseup", "mouseleave"].forEach(ev => roleCard.addEventListener(ev, onHoldEnd));
     ["touchend", "touchcancel"].forEach(ev => {
         roleCard.addEventListener(ev, (e) => {
             e.preventDefault();
@@ -633,10 +640,6 @@ window.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("btnNextPlayer").addEventListener("click", nextPlayerOrPlay);
-
-    document.getElementById("btnNewGameSameSettings").addEventListener("click", () => {
-        newGameSameSettings();
-    });
-
+    document.getElementById("btnNewGameSameSettings").addEventListener("click", () => newGameSameSettings());
     document.getElementById("btnRevealImpostors").addEventListener("click", handleRevealImpostors);
 });
