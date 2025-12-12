@@ -859,7 +859,7 @@ button.large {
     /* Use cover instead of fixed % to be safer */
     background-position: center;
     background-repeat: no-repeat;
-    background-size: 250%;
+    background-size: 300%;
     /* o 160%, 180%... */
     position: relative;
 }
