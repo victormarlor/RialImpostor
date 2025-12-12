@@ -451,11 +451,10 @@ button:disabled {
     font-size: clamp(1.2rem, 5vw, 1.8rem);
     /* Responsive font */
     font-weight: 700;
-    color: var(--noir-yellow);
+    color: var(--noir-black);
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.8);
     flex-shrink: 0;
     max-width: 100%;
 }
