@@ -1,0 +1,837 @@
+:root {
+    --noir-black: #0a0a0a;
+    --noir-white: #f5f5f5;
+    --noir-gray: #2a2a2a;
+    --noir-gray-light: #4a4a4a;
+    --noir-yellow: #ffd700;
+    --noir-yellow-dark: #ccaa00;
+    --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.8);
+    --shadow-medium: 0 4px 12px rgba(0, 0, 0, 0.6);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    display: flex;
+    font-family: 'Courier Prime', 'Courier New', monospace;
+    min-height: 100vh;
+    background: var(--noir-black);
+    color: var(--noir-white);
+    overflow-x: hidden;
+    position: relative;
+    touch-action: pan-y;
+}
+
+/* Film grain texture */
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px),
+        repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(255, 255, 255, 0.03) 2px, rgba(255, 255, 255, 0.03) 4px);
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.3;
+}
+
+.app {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Typography */
+h1,
+h2,
+h3 {
+    font-family: 'Special Elite', 'Courier New', monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+h2 {
+    font-size: 1.4rem;
+    color: var(--noir-yellow);
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.8);
+}
+
+/* Case File Card */
+.case-file {
+    background: var(--noir-white);
+    color: var(--noir-black);
+    padding: 20px;
+    box-shadow: var(--shadow-heavy);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.case-file::after {
+    content: 'CONFIDENCIAL';
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: #cc0000;
+    transform: rotate(15deg);
+    border: 2px solid #cc0000;
+    padding: 4px 8px;
+    opacity: 0.6;
+}
+
+/* Step Header */
+.step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--noir-black);
+}
+
+.step-indicator {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--noir-gray-light);
+    font-weight: 700;
+}
+
+/* Input Styles */
+label {
+    display: block;
+    font-size: 0.85rem;
+    color: var(--noir-black);
+    margin-bottom: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+input[type="text"],
+input[type="number"] {
+    width: 100%;
+    padding: 12px;
+    background: var(--noir-white);
+    border: 2px solid var(--noir-black);
+    color: var(--noir-black);
+    font-size: 1rem;
+    font-family: 'Courier Prime', monospace;
+    outline: none;
+    transition: all 0.2s ease;
+    box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+    border-color: var(--noir-yellow);
+    box-shadow:
+        inset 2px 2px 0 rgba(0, 0, 0, 0.1),
+        0 0 0 3px rgba(255, 215, 0, 0.3);
+}
+
+/* Number Control */
+.number-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--noir-white);
+    border: 2px solid var(--noir-black);
+    padding: 8px 12px;
+    box-shadow: 2px 2px 0 var(--noir-black);
+}
+
+.number-control button {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    font-size: 1.5rem;
+    line-height: 1;
+    flex-shrink: 0;
+    background: var(--noir-black);
+    color: var(--noir-yellow);
+    border: 2px solid var(--noir-black);
+    box-shadow: none;
+}
+
+.number-control button:active {
+    background: var(--noir-yellow);
+    color: var(--noir-black);
+    transform: none;
+}
+
+.number-control button:disabled {
+    opacity: 0.3;
+    background: var(--noir-gray);
+    color: var(--noir-gray-light);
+}
+
+.number-display {
+    flex: 1;
+    text-align: center;
+    font-family: 'Special Elite', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--noir-black);
+    user-select: none;
+}
+
+/* Button Styles */
+button {
+    position: relative;
+    border: 3px solid var(--noir-black);
+    cursor: pointer;
+    padding: 14px 20px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    font-family: 'Special Elite', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    transition: all 0.15s ease;
+    width: 100%;
+    touch-action: manipulation;
+    user-select: none;
+}
+
+button:active {
+    transform: translate(2px, 2px);
+}
+
+button.primary {
+    background: var(--noir-yellow);
+    color: var(--noir-black);
+    box-shadow: 4px 4px 0 var(--noir-black);
+}
+
+button.primary:active {
+    box-shadow: 2px 2px 0 var(--noir-black);
+}
+
+button.secondary {
+    background: var(--noir-white);
+    color: var(--noir-black);
+    box-shadow: 4px 4px 0 var(--noir-black);
+}
+
+button.secondary:active {
+    box-shadow: 2px 2px 0 var(--noir-black);
+}
+
+button.secondary.active {
+    background: var(--noir-black);
+    color: var(--noir-yellow);
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Evidence Board (Categories Grid) */
+.evidence-board {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.evidence-card {
+    background: var(--noir-white);
+    border: 3px solid var(--noir-black);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    box-shadow: 3px 3px 0 var(--noir-black);
+    touch-action: manipulation;
+    user-select: none;
+}
+
+.evidence-card:active {
+    transform: translate(2px, 2px);
+    box-shadow: 1px 1px 0 var(--noir-black);
+}
+
+.evidence-card.selected {
+    background: var(--noir-yellow);
+    box-shadow: 3px 3px 0 var(--noir-black);
+}
+
+.evidence-card.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 24px;
+    height: 24px;
+    background: var(--noir-black);
+    color: var(--noir-yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.evidence-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--noir-black);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* Suspect List (Player Inputs) */
+.suspect-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.suspect-card {
+    background: var(--noir-white);
+    border: 2px solid var(--noir-black);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 2px 2px 0 var(--noir-black);
+}
+
+.suspect-number {
+    width: 32px;
+    height: 32px;
+    background: var(--noir-black);
+    color: var(--noir-yellow);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-family: 'Special Elite', monospace;
+    flex-shrink: 0;
+    font-size: 0.9rem;
+}
+
+.suspect-card input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 6px;
+    box-shadow: none;
+    font-size: 0.95rem;
+}
+
+.suspect-card input:focus {
+    box-shadow: none;
+    border: none;
+    outline: 1px dashed var(--noir-gray-light);
+    outline-offset: 2px;
+}
+
+/* Classified Document (Role Card) */
+.reveal-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.suspect-name-display {
+    font-family: 'Special Elite', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--noir-yellow);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.8);
+}
+
+.classified-container {
+    width: 100%;
+    max-width: 250px;
+    aspect-ratio: 2 / 3;
+    perspective: 1500px;
+    margin: 20px auto;
+}
+
+.classified-doc {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+    cursor: pointer;
+    touch-action: none;
+}
+
+.classified-doc.flipped {
+    transform: rotateY(180deg);
+}
+
+.doc-face {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 24px;
+    box-shadow: var(--shadow-heavy);
+}
+
+.doc-back {
+    background:
+        repeating-linear-gradient(45deg,
+            var(--noir-gray),
+            var(--noir-gray) 10px,
+            var(--noir-gray-light) 10px,
+            var(--noir-gray-light) 20px);
+    border: 4px solid var(--noir-black);
+}
+
+.doc-back-content {
+    text-align: center;
+    background: rgba(10, 10, 10, 0.8);
+    padding: 20px;
+    border: 2px solid var(--noir-yellow);
+}
+
+.doc-back-title {
+    font-family: 'Special Elite', monospace;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--noir-yellow);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 12px;
+}
+
+.doc-back-hint {
+    font-size: 0.85rem;
+    color: var(--noir-white);
+    line-height: 1.6;
+}
+
+.doc-front {
+    background: var(--noir-white);
+    border: 4px solid var(--noir-black);
+    transform: rotateY(180deg);
+    position: relative;
+}
+
+.doc-front::before {
+    content: 'CLASIFICADO';
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    color: #cc0000;
+    transform: rotate(15deg);
+    border: 2px solid #cc0000;
+    padding: 4px 8px;
+    opacity: 0.6;
+}
+
+.doc-front-main {
+    font-family: 'Special Elite', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    color: var(--noir-black);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    word-break: break-word;
+}
+
+.impostor-text {
+    color: #cc0000;
+}
+
+.doc-front-sub {
+    font-size: 0.9rem;
+    color: var(--noir-gray-light);
+    text-align: center;
+    line-height: 1.6;
+}
+
+/* Investigation Board (Round Display) */
+.investigation-board {
+    text-align: center;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    flex: 1;
+}
+
+.board-label {
+    font-size: 0.8rem;
+    color: var(--noir-black);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+    font-weight: 700;
+}
+
+.board-value {
+    font-family: 'Special Elite', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--noir-black);
+    margin: 10px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.board-value.classified {
+    color: var(--noir-gray-light);
+    font-style: italic;
+}
+
+.board-value.revealed {
+    color: var(--noir-yellow);
+    text-shadow: 2px 2px 0 var(--noir-black);
+}
+
+.culprits-reveal {
+    font-size: 1rem;
+    color: #cc0000;
+    margin-top: 16px;
+    padding: 16px;
+    background: rgba(204, 0, 0, 0.1);
+    border: 3px solid #cc0000;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Button Rows */
+.buttons-row {
+    display: flex;
+    gap: 12px;
+}
+
+.buttons-row button {
+    margin-top: 8px;
+}
+
+@media (min-width: 400px) {
+    .buttons-row.horizontal {
+        flex-direction: row;
+    }
+
+    .buttons-row.horizontal button {
+        flex: 1;
+    }
+}
+
+/* Sections */
+.section {
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+    height: 100%;
+}
+
+.section.active {
+    display: flex;
+    animation: fadeIn 0.4s ease;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Error Messages */
+.error {
+    display: none;
+    color: #cc0000;
+    font-size: 0.85rem;
+    margin-top: 8px;
+    padding: 10px;
+    background: rgba(204, 0, 0, 0.1);
+    border-left: 3px solid #cc0000;
+    font-weight: 700;
+}
+
+.error:not(:empty) {
+    display: block;
+}
+
+/* Utility Classes */
+.spacer {
+    height: 16px;
+}
+
+.row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Typewriter effect for title */
+@keyframes blink {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0;
+    }
+}
+
+/* Home Screen */
+.home-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh;
+    text-align: center;
+    gap: 32px;
+    position: relative;
+}
+
+/* Home screen background */
+#homeSection .case-file {
+    background-image: url('../assets/img/detective_office.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+#homeSection .case-file::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 10, 0.75);
+    z-index: 0;
+}
+
+#homeSection .home-screen {
+    position: relative;
+    z-index: 1;
+}
+
+.home-title {
+    font-family: 'Special Elite', monospace;
+    font-size: 2.5rem;
+    color: var(--noir-white);
+    text-shadow: 3px 3px 0 var(--noir-yellow),
+        0 0 20px rgba(255, 215, 0, 0.5);
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.home-subtitle {
+    font-family: 'Courier Prime', monospace;
+    font-size: 0.9rem;
+    color: var(--noir-yellow);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-top: -16px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.home-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 300px;
+}
+
+button.large {
+    padding: 20px 24px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.button-icon {
+    font-size: 1.3rem;
+    display: inline-block;
+}
+
+/* Hide CONFIDENCIAL stamp on home screen */
+#homeSection .case-file::after {
+    display: none;
+}
+
+/* Config screen background */
+#configSection .case-file {
+    background-image: url('../assets/img/detective_desk.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+#configSection .case-file::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(245, 245, 245, 0.5);
+    z-index: 0;
+}
+
+#configSection .case-file>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* Categories and Names sections - same background as config */
+#categoriesSection .case-file,
+#namesSection .case-file {
+    background-image: url('../assets/img/detective_desk.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+#categoriesSection .case-file::before,
+#namesSection .case-file::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(245, 245, 245, 0.5);
+    z-index: 0;
+}
+
+#categoriesSection .case-file>*,
+#namesSection .case-file>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* Reveal screen background - Case file folder */
+#revealSection .case-file {
+    background-image: url('../assets/img/case_file_folder.png');
+    background-size: 250%;
+    background-position: 51.5% 59%;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+#revealSection .case-file::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 10, 0.15);
+    z-index: 0;
+}
+
+#revealSection .case-file>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* Integrate card with folder background */
+#revealSection .doc-face {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+#revealSection .classified-container {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+/* Play section background - Detective mystery */
+#playSection .case-file {
+    background-image: url('../assets/img/detective_suspicious.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    position: relative;
+}
+
+#playSection .case-file::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(10, 10, 10, 0.7);
+    z-index: 0;
+}
+
+#playSection .case-file>* {
+    position: relative;
+    z-index: 1;
+}
+
+/* Enhance text visibility on dark background */
+#playSection .board-value {
+    color: var(--noir-white);
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+#playSection .board-value.revealed {
+    color: var(--noir-yellow);
+    text-shadow: 2px 2px 0 var(--noir-black),
+        0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+#playSection .board-label {
+    color: var(--noir-white);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}

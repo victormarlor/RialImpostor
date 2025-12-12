@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>Impostor Rial</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="assets/icons/icon-512.png">
+  <link rel="shortcut icon" href="favicon.ico">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- iOS Meta Tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RialImpostor">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+
+  <!-- Theme Color -->
+  <meta name="theme-color" content="#0a0a0a">
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- Pantalla de Inicio -->
+    <section id="homeSection" class="section active">
+      <div class="case-file">
+        <div class="home-screen">
+          <h1 class="home-title">IMPOSTOR RIAL</h1>
+
+          <div class="home-buttons">
+            <button type="button" class="primary large" id="btnPlay">
+              Abrir Caso
+            </button>
+            <button type="button" class="secondary large" id="btnInstall">
+              Añadir a Pantalla de Inicio
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 1: Configuración -->
+    <section id="configSection" class="section">
+      <div class="case-file">
+        <div class="step-header">
+          <h2>Configuración del Caso</h2>
+          <div class="step-indicator">Paso 1/3</div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Número de Sospechosos</label>
+            <div class="number-control">
+              <button type="button" id="btnPlayersDown">−</button>
+              <div class="number-display" id="numPlayersDisplay">5</div>
+              <button type="button" id="btnPlayersUp">+</button>
+            </div>
+          </div>
+          <div>
+            <label>Número de Impostores</label>
+            <div class="number-control">
+              <button type="button" id="btnImpostorsDown">−</button>
+              <div class="number-display" id="numImpostorsDisplay">1</div>
+              <button type="button" id="btnImpostorsUp">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <label>¿Los Impostores se conocen entre sí?</label>
+        <div class="buttons-row horizontal">
+          <button type="button" class="secondary" id="btnImpostorsKnowYes">Sí</button>
+          <button type="button" class="secondary" id="btnImpostorsKnowNo">No</button>
+        </div>
+
+        <div id="configError" class="error"></div>
+
+        <div class="buttons-row horizontal" style="margin-top: auto;">
+          <button type="button" class="secondary" id="btnConfigBack">Atrás</button>
+          <button type="button" class="primary" id="btnToCategories">Continuar Investigación</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 2: Categorías -->
+    <section id="categoriesSection" class="section">
+      <div class="case-file">
+        <div class="step-header">
+          <h2>Tablero de Evidencias</h2>
+          <div class="step-indicator">Paso 2/3</div>
+        </div>
+
+        <p style="font-size: 0.85rem; margin-bottom: 8px; color: black;">
+          Selecciona las categorías de evidencia para el caso
+        </p>
+
+        <div id="evidenceBoard" class="evidence-board"></div>
+        <div id="categoriesError" class="error"></div>
+
+        <div class="buttons-row horizontal" style="margin-top: auto;">
+          <button type="button" class="secondary" id="btnCategoriesBack">Atrás</button>
+          <button type="button" class="primary" id="btnToNames">Continuar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Paso 3: Nombres -->
+    <section id="namesSection" class="section">
+      <div class="case-file">
+        <div class="step-header">
+          <h2>Lista de Sospechosos</h2>
+          <div class="step-indicator">Paso 3/3</div>
+        </div>
+        <p style="font-size: 1rem; color: black;">Añade nombres a la lista de sospechosos</p>
+
+        <div id="suspectsContainer" class="suspect-list"></div>
+        <div id="namesError" class="error"></div>
+
+        <div class="buttons-row horizontal" style="margin-top: auto;">
+          <button type="button" class="secondary" id="btnNamesBack">Atrás</button>
+          <button type="button" class="primary" id="btnStartGame">Iniciar Caso</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reparto: Documento Clasificado -->
+    <section id="revealSection" class="section">
+      <div class="case-file">
+        <div class="reveal-area">
+          <div class="suspect-name-display" id="currentPlayerName"></div>
+
+          <div class="classified-container">
+            <div class="classified-doc" id="roleCard">
+              <div class="doc-face doc-back">
+                <div class="doc-back-content">
+                  <div class="doc-back-title">Documento Clasificado</div>
+                  <div class="doc-back-hint">Mantén presionado para revelar</div>
+                </div>
+              </div>
+              <div class="doc-face doc-front">
+                <div class="doc-front-main" id="cardFrontMain"></div>
+                <div class="doc-front-sub" id="cardFrontSub"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="primary" id="btnNextPlayer" style="display:none; margin-top: auto;">Siguiente
+          Sospechoso</button>
+      </div>
+    </section>
+
+    <!-- Ronda -->
+    <section id="playSection" class="section">
+      <div class="case-file">
+        <div class="investigation-board">
+          <div class="investigation-board-top">
+            <h2 style="margin-bottom: 24px;">Investigación en Curso</h2>
+            <div class="board-label">Palabra Clave</div>
+            <div class="board-value classified" id="roundWord">[CLASIFICADO]</div>
+          </div>
+
+          <div class="investigation-board-middle">
+            <div class="board-label">Empieza</div>
+            <div class="board-value" id="startingPlayer"></div>
+          </div>
+
+          <div class="investigation-board-bottom">
+            <button type="button" class="secondary" id="btnRevealImpostors">Revelar Impostor(es)</button>
+            <div id="impostorsList" class="culprits-reveal" style="display: none;"></div>
+          </div>
+
+        </div>
+        <div class="buttons-row horizontal" style="margin-top: auto;">
+          <button type="button" class="secondary" id="btnBackToConfig">Nueva Configuración</button>
+          <button type="button" class="primary" id="btnNewGameSameSettings">Nuevo Caso</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/script.js"></script>
+</body>
+
+</html>
