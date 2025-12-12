@@ -659,17 +659,16 @@ window.addEventListener("DOMContentLoaded", () => {
 
     const btnInstall = document.getElementById("btnInstall");
     if (btnInstall) {
-        btnInstall.addEventListener("click", async () => {
-            if (!isPWAAvailable || !deferredPrompt) {
-                alert("Para instalar esta aplicación, ábrela desde Chrome, Edge o Safari y busca la opción 'Añadir a pantalla de inicio' en el menú del navegador.");
-                return;
-            }
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            console.log(`User response to the install prompt: ${outcome}`);
-            deferredPrompt = null;
-            isPWAAvailable = false;
-            btnInstall.style.display = 'none';
+        btnInstall.addEventListener("click", () => {
+            // Instead of alert/prompt, go to tutorial
+            switchSection("installTutorialSection");
+        });
+    }
+
+    const btnTutorialBack = document.getElementById("btnTutorialBack");
+    if (btnTutorialBack) {
+        btnTutorialBack.addEventListener("click", () => {
+            switchSection("homeSection");
         });
     }
 

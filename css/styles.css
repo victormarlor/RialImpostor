@@ -931,3 +931,35 @@ button.large {
     pointer-events: auto;
     opacity: 1;
 }
+
+/* Tutorial Section */
+.tutorial-list {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    padding: 8px;
+    margin-top: 16px;
+}
+
+.tutorial-item {
+    background: var(--noir-white);
+    border: 2px solid var(--noir-black);
+    padding: 12px;
+    box-shadow: 2px 2px 0 var(--noir-black);
+}
+
+.tutorial-item p {
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.tutorial-item img {
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--noir-gray-light);
+    display: block;
+}
