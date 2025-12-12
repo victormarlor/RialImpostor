@@ -23,10 +23,59 @@ let revealImpostorsState = 0;
 const audioClick = new Audio("assets/audio/mouse-click.mp3");
 const audioFlip = new Audio("assets/audio/flipcard.mp3");
 
+// Force preload
+[audioClick, audioFlip].forEach(audio => {
+    audio.preload = "auto";
+    // We do NOT call .load() here to avoid auto-play policy errors on some browsers
+    // We wait for the unlock interaction
+});
+
+let audioUnlocked = false;
+
+function unlockAudio() {
+    if (audioUnlocked) return;
+
+    // Attempt to unlock by playing and immediately pausing
+    [audioClick, audioFlip].forEach(audio => {
+        audio.play().then(() => {
+            audio.pause();
+            audio.currentTime = 0;
+        }).catch(() => {
+            // Ignore error during unlock
+        });
+    });
+
+    audioUnlocked = true;
+
+    // Remove listeners once unlocked
+    document.removeEventListener("touchstart", unlockAudio);
+    document.removeEventListener("click", unlockAudio);
+}
+
+document.addEventListener("touchstart", unlockAudio, { passive: true });
+document.addEventListener("click", unlockAudio, { passive: true });
+
 function playSound(audio) {
     if (!audio) return;
-    audio.currentTime = 0;
-    audio.play().catch(e => console.warn("Audio play failed:", e));
+
+    // Reset current time to 0 to restart immediately
+    try {
+        audio.currentTime = 0;
+    } catch (e) {
+        // Ignorable if not loaded yet
+    }
+
+    // Attempt to play and handle the promise safely
+    const playPromise = audio.play();
+
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            // Auto-play was prevented or interrupted.
+            if (error.name !== "AbortError") {
+                console.warn("Audio play issue:", error);
+            }
+        });
+    }
 }
 
 // Global click listener for sounds
@@ -35,7 +84,7 @@ document.addEventListener("click", (e) => {
     if (e.target.tagName === "BUTTON" || e.target.closest("button") || e.target.classList.contains("evidence-card")) {
         playSound(audioClick);
     }
-});
+}, { passive: true });
 
 async function loadGameData() {
     const fileMapping = {
@@ -332,6 +381,26 @@ function newGameSameSettings() {
     }
 }
 
+function startRevealPhase() {
+    switchSection("revealSection");
+    resetCard();
+    const playerName = state.players[state.currentPlayerIndex];
+    document.getElementById("currentPlayerName").textContent = playerName;
+}
+
+function nextPlayerOrPlay() {
+    state.currentPlayerIndex++;
+    if (state.currentPlayerIndex >= state.players.length) {
+        switchSection("playSection");
+        const startingName = randomFromArray(state.players);
+        document.getElementById("startingPlayer").textContent = startingName;
+    } else {
+        resetCard();
+        const playerName = state.players[state.currentPlayerIndex];
+        document.getElementById("currentPlayerName").textContent = playerName;
+    }
+}
+
 // Carta
 function resetCard() {
     const roleCard = document.getElementById("roleCard");
@@ -342,7 +411,10 @@ function resetCard() {
     revealUnlocked = false;
     main.textContent = "";
     sub.textContent = "";
-    document.getElementById("btnNextPlayer").style.display = "none";
+
+    const btn = document.getElementById("btnNextPlayer");
+    btn.classList.add("is-hidden");
+    btn.classList.remove("is-visible");
 }
 
 function fillCardForCurrentPlayer() {
@@ -371,27 +443,7 @@ function fillCardForCurrentPlayer() {
         main.classList.remove("impostor-text");
     }
 }
-
-function startRevealPhase() {
-    switchSection("revealSection");
-    resetCard();
-    const playerName = state.players[state.currentPlayerIndex];
-    document.getElementById("currentPlayerName").textContent = playerName;
-}
-
-function nextPlayerOrPlay() {
-    state.currentPlayerIndex++;
-    if (state.currentPlayerIndex >= state.players.length) {
-        switchSection("playSection");
-        const startingName = randomFromArray(state.players);
-        document.getElementById("startingPlayer").textContent = startingName;
-    } else {
-        resetCard();
-        const playerName = state.players[state.currentPlayerIndex];
-        document.getElementById("currentPlayerName").textContent = playerName;
-    }
-}
-
+// [Intervening code omitted for brevity]
 function onHoldStart() {
     if (holdTimeout) {
         clearTimeout(holdTimeout);
@@ -403,7 +455,9 @@ function onHoldStart() {
         roleCard.classList.add("flipped");
         cardCurrentlyFlipped = true;
         if (!revealUnlocked) {
-            document.getElementById("btnNextPlayer").style.display = "inline-block";
+            const btn = document.getElementById("btnNextPlayer");
+            btn.classList.remove("is-hidden");
+            btn.classList.add("is-visible");
             revealUnlocked = true;
         }
     }, 50);
