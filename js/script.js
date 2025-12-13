@@ -403,6 +403,7 @@ function renderSuspectInputs() {
 
         const input = document.createElement("input");
         input.type = "text";
+        input.maxLength = 12;
         input.placeholder = `Sospechoso ${i + 1}`;
         input.dataset.index = i;
 
