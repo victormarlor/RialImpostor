@@ -441,9 +441,9 @@ button:disabled {
 
     /* Ajusta estos valores visualmente */
     padding-top: 15%;
-    padding-bottom: 10%;
-    padding-left: 14%;
-    padding-right: 10%;
+    padding-bottom: 0%;
+    padding-left: 15%;
+    padding-right: 9%;
 }
 
 .suspect-name-display {
