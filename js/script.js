@@ -1,4 +1,4 @@
-const STORAGE_KEY = "impostor_rial_data_v5";
+const STORAGE_KEY = "rial_impostor_data_v6";
 
 const DEFAULT_CATEGORIES = {};
 
