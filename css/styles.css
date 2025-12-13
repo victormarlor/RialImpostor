@@ -448,9 +448,10 @@ button:disabled {
 
 .suspect-name-display {
     font-family: 'Special Elite', monospace;
-    font-size: clamp(1rem, 4vw, 1.4rem);
-    /* Smaller responsive font */
+    font-size: clamp(1.7rem, 6vw, 1.8rem);
+    /* Larger responsive font */
     font-weight: 700;
+    /* Extra visual weight */
     color: var(--noir-white);
     text-align: center;
     text-transform: uppercase;
