@@ -74,7 +74,7 @@ Este proyecto es una aplicación web estática (Vanilla JS/HTML/CSS), por lo que
 ### Opción 2: Ejecutar Localmente
 1.  Clona este repositorio:
     ```bash
-    git clone https://github.com/usuario/RialImpostor.git
+    git clone https://github.com/victormarlor/RialImpostor.git
     ```
 2.  Abre el archivo `index.html` en tu navegador.
 
